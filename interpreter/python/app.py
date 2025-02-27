@@ -124,6 +124,11 @@ class Scanner():
                     lexical = self.number()
                     self.add_token("NUMBER", lexical=lexical)
 
+                # Identifier
+                elif token.isalpha() or token == "_":
+                    self.identifier()
+                    self.add_token("IDENTIFIER")
+
                 # Default Error
                 else:
                     debug(f"Adding error token for {self.current}: {token}")
@@ -156,6 +161,12 @@ class Scanner():
             self.advance()
 
         return float(self.content[self.start:self.current])
+
+    def identifier(self):
+        while self.peek().isalpha() or \
+              self.peek() == "_"    or \
+              self.peek().isnumeric():
+            self.advance()
 
 def main():
     if len(sys.argv) < 3:
