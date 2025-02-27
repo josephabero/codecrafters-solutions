@@ -1,6 +1,12 @@
 from enum import Enum
 import sys
 
+VERBOSE = False
+
+def debug(*args, **kwargs):
+    if VERBOSE:
+        print(*args, **kwargs)
+
 class Token():
     def __init__(self, type, lexeme, literal, line):
         self.type = type
@@ -24,6 +30,12 @@ class Scanner():
     def is_at_end(self):
         return self.current >= len(self.content)
 
+    def peek(self):
+        if self.is_at_end():
+            return ""
+        return self.content[self.current]
+
+
     def advance(self):
         self.current += 1
         return self.content[self.current - 1]
@@ -31,24 +43,34 @@ class Scanner():
     def read_tokens(self):
         while not self.is_at_end():
             self.start = self.current
+            # debug(f"Enter Scan: {self.current}")
             self.scan_token()
+            # debug(f"Exit Scan: {self.current}")
         self.tokens.append(Token("EOF", "", "null", self.line))
 
         return self.tokens, self.errors
 
     def scan_token(self):
         token = self.advance()
+        # debug(f"Scanned: {token}")
         match token:
+            # Brackets
             case "(": self.add_token("LEFT_PAREN")
             case ")": self.add_token("RIGHT_PAREN")
             case "{": self.add_token("LEFT_BRACE")
             case "}": self.add_token("RIGHT_BRACE")
+
+            # Operators
             case "*": self.add_token("STAR")
-            case ".": self.add_token("DOT")
-            case ",": self.add_token("COMMA")
             case "+": self.add_token("PLUS")
             case "-": self.add_token("MINUS")
+
+            # Punctuation
+            case ".": self.add_token("DOT")
+            case ",": self.add_token("COMMA")
             case ";": self.add_token("SEMICOLON")
+
+            # Longer Operators
             case "!":
                 token_to_add = "BANG_EQUAL" if self.match("=") else "BANG"
                 self.add_token(token_to_add)
@@ -61,7 +83,26 @@ class Scanner():
             case ">":
                 token_to_add = "GREATER_EQUAL" if self.match("=") else "GREATER"
                 self.add_token(token_to_add)
-            case _:   self.add_error(token)
+            case "/":
+                # Ignore Comment until Newline or EOF
+                if self.match("/"):
+                    while self.peek() != "\n" and not self.is_at_end():
+                        self.advance()
+                else:
+                    self.add_token("SLASH")
+
+            # Ignore Whitespace
+            case "\n":
+                self.line += 1
+            case "\t":
+                return
+            case "\r":
+                return
+            case " ":
+                return
+            case _:
+                debug(f"Adding error token for {self.current}: {token}")
+                self.add_error(token)
 
     def add_token(self, type, lexical=None):
         text = self.content[self.start:self.current]
