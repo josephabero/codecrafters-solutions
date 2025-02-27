@@ -27,13 +27,19 @@ class Scanner():
         self.current = 0
         self.line = 1
 
-    def is_at_end(self):
-        return self.current >= len(self.content)
+    def is_at_end(self, index=None):
+        index = self.current if index is None else index
+        return index >= len(self.content)
 
     def peek(self):
         if self.is_at_end():
             return ""
         return self.content[self.current]
+
+    def peek_next(self):
+        if self.is_at_end(index=self.current + 1):
+            return ""
+        return self.content[self.current + 1]
 
     def advance(self):
         self.current += 1
@@ -115,24 +121,7 @@ class Scanner():
             case _:
                 # Number
                 if token.isnumeric():
-                    lexical = token
-                    dot, simplify = False, True
-
-                    while (self.peek().isnumeric() or self.peek() == ".") and \
-                          not self.is_at_end():
-
-                        if dot and self.peek() != "0":
-                            simplify = False
-                        if self.peek() == ".":
-                            dot = True
-                        lexical += self.advance()
-
-                    debug(f"Number: {lexical}, {dot}, {simplify}")
-                    if not dot:
-                        lexical += ".0"
-                    elif simplify:
-                        lexical = lexical.rstrip("0")
-                        lexical += "0"
+                    lexical = self.number()
                     self.add_token("NUMBER", lexical=lexical)
 
                 # Default Error
@@ -155,6 +144,18 @@ class Scanner():
 
         self.advance()
         return True
+
+    def number(self):
+        while self.peek().isdigit():
+            self.advance()
+
+        if self.peek() == "." and self.peek_next().isdigit():
+            self.advance()
+
+        while self.peek().isdigit():
+            self.advance()
+
+        return float(self.content[self.start:self.current])
 
 def main():
     if len(sys.argv) < 3:
