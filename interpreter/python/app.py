@@ -45,6 +45,12 @@ class Scanner():
         self.current += 1
         return self.content[self.current - 1]
 
+    def get_current_text(self):
+        try:
+            return self.content[self.start:self.current]
+        except Exception as e:
+            return ""
+
     def read_tokens(self):
         while not self.is_at_end():
             self.start = self.current
@@ -126,8 +132,16 @@ class Scanner():
 
                 # Identifier
                 elif token.isalpha() or token == "_":
-                    self.identifier()
-                    self.add_token("IDENTIFIER")
+                    while self.peek().isalpha() or \
+                          self.peek() == "_"    or \
+                          self.peek().isnumeric():
+                        self.advance()
+
+                    if self.is_reserved():
+                        reserved_type = self.get_current_text()
+                        self.add_token(reserved_type.upper())
+                    else:
+                        self.add_token("IDENTIFIER")
 
                 # Default Error
                 else:
@@ -135,7 +149,7 @@ class Scanner():
                     self.add_error(f"Unexpected character: {token}")
 
     def add_token(self, type, lexical=None):
-        text = self.content[self.start:self.current]
+        text = self.get_current_text()
         self.tokens.append(Token(type, text, lexical, self.line))
 
     def add_error(self, error):
@@ -160,13 +174,29 @@ class Scanner():
         while self.peek().isdigit():
             self.advance()
 
-        return float(self.content[self.start:self.current])
+        return float(self.get_current_text())
 
-    def identifier(self):
-        while self.peek().isalpha() or \
-              self.peek() == "_"    or \
-              self.peek().isnumeric():
-            self.advance()
+    def is_reserved(self):
+        reserved_words = (
+                "and",
+                "class",
+                "else",
+                "false",
+                "for",
+                "fun",
+                "if",
+                "nil",
+                "or",
+                "print",
+                "return",
+                "super",
+                "this",
+                "true",
+                "var",
+                "while"
+            )
+
+        return self.get_current_text() in reserved_words
 
 def main():
     if len(sys.argv) < 3:
