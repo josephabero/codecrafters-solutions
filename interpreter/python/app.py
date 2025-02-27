@@ -35,7 +35,6 @@ class Scanner():
             return ""
         return self.content[self.current]
 
-
     def advance(self):
         self.current += 1
         return self.content[self.current - 1]
@@ -112,9 +111,34 @@ class Scanner():
                     self.add_token("STRING", lexical=lexical)
                 else:
                     self.add_error("Unterminated string.")
+
             case _:
-                debug(f"Adding error token for {self.current}: {token}")
-                self.add_error(f"Unexpected character: {token}")
+                # Number
+                if token.isnumeric():
+                    lexical = token
+                    dot, simplify = False, True
+
+                    while (self.peek().isnumeric() or self.peek() == ".") and \
+                          not self.is_at_end():
+
+                        if dot and self.peek() != "0":
+                            simplify = False
+                        if self.peek() == ".":
+                            dot = True
+                        lexical += self.advance()
+
+                    debug(f"Number: {lexical}, {dot}, {simplify}")
+                    if not dot:
+                        lexical += ".0"
+                    elif simplify:
+                        lexical = lexical.rstrip("0")
+                        lexical += "0"
+                    self.add_token("NUMBER", lexical=lexical)
+
+                # Default Error
+                else:
+                    debug(f"Adding error token for {self.current}: {token}")
+                    self.add_error(f"Unexpected character: {token}")
 
     def add_token(self, type, lexical=None):
         text = self.content[self.start:self.current]
