@@ -52,7 +52,7 @@ class Scanner():
 
     def scan_token(self):
         token = self.advance()
-        # debug(f"Scanned: {token}")
+        debug(f"Scanned: {token}")
         match token:
             # Brackets
             case "(": self.add_token("LEFT_PAREN")
@@ -100,16 +100,28 @@ class Scanner():
                 return
             case " ":
                 return
+
+            # String
+            case '"':
+                lexical = ""
+                while self.peek() != '"' and not self.is_at_end():
+                    lexical += self.advance()
+
+                if self.peek() == '"':
+                    self.advance()
+                    self.add_token("STRING", lexical=lexical)
+                else:
+                    self.add_error("Unterminated string.")
             case _:
                 debug(f"Adding error token for {self.current}: {token}")
-                self.add_error(token)
+                self.add_error(f"Unexpected character: {token}")
 
     def add_token(self, type, lexical=None):
         text = self.content[self.start:self.current]
         self.tokens.append(Token(type, text, lexical, self.line))
 
-    def add_error(self, token):
-        self.errors.append(f"[line {self.line}] Error: Unexpected character: {token}")
+    def add_error(self, error):
+        self.errors.append(f"[line {self.line}] Error: {error}")
 
     def match(self, expected):
         if self.is_at_end():
